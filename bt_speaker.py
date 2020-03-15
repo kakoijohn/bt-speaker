@@ -84,7 +84,7 @@ class AutoAcceptSingleAudioAgent(BTAgent):
     This 'first comes first served' is not necessarily the 'bluetooth way' of
     connecting devices but the easiest to implement.
     """
-    def __init__(self, connect_callback, disconnect_callback):
+    def __init__(self, connect_callback, disconnect_callback, metadata_callback):
         BTAgent.__init__(self, default_pin_code=config.get('bluez', 'pin_code') or '0000', cb_notify_on_authorize=self.auto_accept_one)
         self.adapter = BTAdapter(config.get('bluez', 'device_path'))
         self.adapter.set_property('Discoverable', config.getboolean('bluez', 'discoverable'))
@@ -93,6 +93,7 @@ class AutoAcceptSingleAudioAgent(BTAgent):
         self.tracked_devices =  []
         self.connect_callback = connect_callback
         self.disconnect_callback = disconnect_callback
+        self.metadata_callback = metadata_callback
         self.update_discoverable()
 
     def update_discoverable(self):
@@ -123,6 +124,14 @@ class AutoAcceptSingleAudioAgent(BTAgent):
 
         return True
 
+    def property_changed(self, addr, properties, signature, device):
+        self._track_connection_state(addr, properties, signature, device)
+        self._watch_metadata(addr, properties, signature, device)
+
+    def _watch_metadata(self, addr, properties, signature, device):
+        if not 'Metadata' in properties: return
+        self.metadata_callback(properties['Metadata'])
+
     def _track_connection_state(self, addr, properties, signature, device):
         if self.connected and self.connected != device: return
         if not 'Connected' in properties: return
@@ -146,17 +155,28 @@ def setup_bt():
     media.register_endpoint(sink._path, sink.get_properties())
 
     def startup():
-        subprocess.Popen(config.get('bt_speaker', 'startup_command'), shell=True).communicate()
+        command = config.get('bt_speaker', 'startup_command')
+        if not command: return
+        subprocess.Popen(command, shell=True).communicate()
 
     def connect():
-        subprocess.Popen(config.get('bt_speaker', 'connect_command'), shell=True).communicate()
+        command = config.get('bt_speaker', 'connect_command')
+        if not command: return
+        subprocess.Popen(command, shell=True).communicate()
 
     def disconnect():
         sink.close_transport()
-        subprocess.Popen(config.get('bt_speaker', 'disconnect_command'), shell=True).communicate()
+        command = config.get('bt_speaker', 'disconnect_command')
+        if not command: return
+        subprocess.Popen(command, shell=True).communicate()
+
+    def metadata(metadata):
+        command = config.get('bt_speaker', 'metadata_command')
+        if not command: return
+        subprocess.Popen(command, shell=True, env=metadata).communicate()
 
     # setup bluetooth agent (that manages connections of devices)
-    agent = AutoAcceptSingleAudioAgent(connect, disconnect)
+    agent = AutoAcceptSingleAudioAgent(connect, disconnect, metadata)
     manager = BTAgentManager()
     manager.register_agent(agent._path, "NoInputNoOutput")
     manager.request_default_agent(agent._path)

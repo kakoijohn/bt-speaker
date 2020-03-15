@@ -116,7 +116,7 @@ class AutoAcceptSingleAudioAgent(BTAgent):
         # track connection state of the device (is there a better way?)
         if not device in self.tracked_devices:
             self.tracked_devices.append(device)
-            self.adapter._bus.add_signal_receiver(self._track_connection_state,
+            self.adapter._bus.add_signal_receiver(self.property_changed,
                                                   path=device,
                                                   signal_name='PropertiesChanged',
                                                   dbus_interface='org.freedesktop.DBus.Properties',

@@ -116,17 +116,18 @@ class AutoAcceptSingleAudioAgent(BTAgent):
         # track connection state of the device (is there a better way?)
         if not device in self.tracked_devices:
             self.tracked_devices.append(device)
-            self.adapter._bus.add_signal_receiver(self.property_changed,
+            self.adapter._bus.add_signal_receiver(self._track_connection_state,
                                                   path=device,
+                                                  signal_name='PropertiesChanged',
+                                                  dbus_interface='org.freedesktop.DBus.Properties',
+                                                  path_keyword='device')
+            self.adapter._bus.add_signal_receiver(self._watch_metadata,
+                                                  path=device + '/player0',
                                                   signal_name='PropertiesChanged',
                                                   dbus_interface='org.freedesktop.DBus.Properties',
                                                   path_keyword='device')
 
         return True
-
-    def property_changed(self, addr, properties, signature, device):
-        self._track_connection_state(addr, properties, signature, device)
-        self._watch_metadata(addr, properties, signature, device)
 
     def _watch_metadata(self, addr, properties, signature, device):
         if not 'Metadata' in properties: return

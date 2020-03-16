@@ -155,6 +155,8 @@ def setup_bt():
     media = BTMedia(config.get('bluez', 'device_path'))
     media.register_endpoint(sink._path, sink.get_properties())
 
+    last_track = None
+
     def startup():
         command = config.get('bt_speaker', 'startup_command')
         if not command: return
@@ -174,6 +176,8 @@ def setup_bt():
     def track(track):
         command = config.get('bt_speaker', 'track_command')
         if not command: return
+        if not str(track) == last_track: return
+        last_track = str(track)
         env = dict()
         for key in track:
             env[key.upper()] = str(track[key])

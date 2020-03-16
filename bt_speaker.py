@@ -173,15 +173,17 @@ def setup_bt():
         if not command: return
         subprocess.Popen(command, shell=True).communicate()
 
-    def track(track):
+    def track(data):
         command = config.get('bt_speaker', 'track_command')
         if not command: return
-        if not str(track) == last_track: return
-        last_track = str(track)
+        if not str(data) == track.last: return
+        track.last = str(data)
         env = dict()
-        for key in track:
-            env[key.upper()] = str(track[key])
+        for key in data:
+            env[key.upper()] = str(data[key])
         subprocess.Popen(command, shell=True, env=env).communicate()
+
+    track.last = None
 
     # setup bluetooth agent (that manages connections of devices)
     agent = AutoAcceptSingleAudioAgent(connect, disconnect, track)

@@ -176,7 +176,7 @@ def setup_bt():
         if not command: return
         env = dict()
         for key in track:
-            env[key.upper()] = track[key]
+            env[key.upper()] = str(track[key])
         subprocess.Popen(command, shell=True, env=env).communicate()
 
     # setup bluetooth agent (that manages connections of devices)

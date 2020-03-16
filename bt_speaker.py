@@ -176,7 +176,7 @@ def setup_bt():
     def track(data):
         command = config.get('bt_speaker', 'track_command')
         if not command: return
-        if not str(data) == track.last: return
+        if str(data) == track.last: return
         track.last = str(data)
         env = dict()
         for key in data:

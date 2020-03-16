@@ -84,7 +84,7 @@ class AutoAcceptSingleAudioAgent(BTAgent):
     This 'first comes first served' is not necessarily the 'bluetooth way' of
     connecting devices but the easiest to implement.
     """
-    def __init__(self, connect_callback, disconnect_callback, metadata_callback):
+    def __init__(self, connect_callback, disconnect_callback, track_callback):
         BTAgent.__init__(self, default_pin_code=config.get('bluez', 'pin_code') or '0000', cb_notify_on_authorize=self.auto_accept_one)
         self.adapter = BTAdapter(config.get('bluez', 'device_path'))
         self.adapter.set_property('Discoverable', config.getboolean('bluez', 'discoverable'))
@@ -93,7 +93,7 @@ class AutoAcceptSingleAudioAgent(BTAgent):
         self.tracked_devices =  []
         self.connect_callback = connect_callback
         self.disconnect_callback = disconnect_callback
-        self.metadata_callback = metadata_callback
+        self.track_callback = track_callback
         self.update_discoverable()
 
     def update_discoverable(self):
@@ -121,7 +121,7 @@ class AutoAcceptSingleAudioAgent(BTAgent):
                                                   signal_name='PropertiesChanged',
                                                   dbus_interface='org.freedesktop.DBus.Properties',
                                                   path_keyword='device')
-            self.adapter._bus.add_signal_receiver(self._watch_metadata,
+            self.adapter._bus.add_signal_receiver(self._watch_track,
                                                   path=device + '/player0',
                                                   signal_name='PropertiesChanged',
                                                   dbus_interface='org.freedesktop.DBus.Properties',
@@ -129,9 +129,9 @@ class AutoAcceptSingleAudioAgent(BTAgent):
 
         return True
 
-    def _watch_metadata(self, addr, properties, signature, device):
-        if not 'Metadata' in properties: return
-        self.metadata_callback(properties['Metadata'])
+    def _watch_track(self, addr, properties, signature, device):
+        if not 'Track' in properties: return
+        self.track_callback(properties['Track'])
 
     def _track_connection_state(self, addr, properties, signature, device):
         if self.connected and self.connected != device: return
@@ -171,13 +171,16 @@ def setup_bt():
         if not command: return
         subprocess.Popen(command, shell=True).communicate()
 
-    def metadata(metadata):
-        command = config.get('bt_speaker', 'metadata_command')
+    def track(track):
+        command = config.get('bt_speaker', 'track_command')
         if not command: return
-        subprocess.Popen(command, shell=True, env=metadata).communicate()
+        env = dict()
+        for key in track:
+            env[key.upper()] = track[key]
+        subprocess.Popen(command, shell=True, env=env).communicate()
 
     # setup bluetooth agent (that manages connections of devices)
-    agent = AutoAcceptSingleAudioAgent(connect, disconnect, metadata)
+    agent = AutoAcceptSingleAudioAgent(connect, disconnect, track)
     manager = BTAgentManager()
     manager.register_agent(agent._path, "NoInputNoOutput")
     manager.request_default_agent(agent._path)

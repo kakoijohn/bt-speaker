@@ -195,6 +195,9 @@ class SBCCodec:
         :return data: Decoded data bytes as an array.
         :rtype: array{byte}
         """
+
+        #was originally max_len=2560
+        
         output_buffer = ffi.new('char[]', max_len)
         sz = self.codec.rtp_sbc_decode_from_fd(self.config,
                                                output_buffer,

@@ -179,7 +179,7 @@ class SBCCodec:
                                         self.seq_num,
                                         fd)
 
-    def decode(self, fd, mtu, max_len=128):
+    def decode(self, fd, mtu, max_len=64):
         """
         Read the media transport descriptor, depay
         the RTP payload and decode the SBC frames into
@@ -197,7 +197,7 @@ class SBCCodec:
         """
 
         #was originally max_len=2560
-        
+
         output_buffer = ffi.new('char[]', max_len)
         sz = self.codec.rtp_sbc_decode_from_fd(self.config,
                                                output_buffer,

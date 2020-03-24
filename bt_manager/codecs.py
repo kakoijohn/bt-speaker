@@ -179,7 +179,7 @@ class SBCCodec:
                                         self.seq_num,
                                         fd)
 
-    def decode(self, fd, mtu, max_len=640):
+    def decode(self, fd, mtu, max_len=128):
         """
         Read the media transport descriptor, depay
         the RTP payload and decode the SBC frames into
